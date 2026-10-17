@@ -2,6 +2,12 @@
 
 Turn a rigged humanoid **.glb** (Mixamo or Avaturn rig) into a **VRM 0.0** avatar, right in your browser, then walk around with it before downloading.
 
+**▶ Try it: [glbtovrm.netlify.app](https://glbtovrm.netlify.app)**
+
+![GLBtoVRM home page: drop a .glb file](docs/home.jpg)
+
+![A converted avatar walking, running, strafing and jumping in the try-it window](docs/demo.gif)
+
 - **Private**: the conversion runs on your device (Python in WebAssembly via Pyodide). The file is never uploaded.
 - **Ready for web metaverses**: normalized skeleton (bones carry translation only), straight T-pose, facing -Z, the layout Hyperfy expects.
 - **Light**: the output stays under a size budget (10 MB by default).
