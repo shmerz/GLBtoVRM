@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GLBtoVRM</title>
+  <meta name="description" content="Convert a rigged humanoid GLB (Mixamo or Avaturn) into a VRM 0.0 avatar, entirely in your browser, and try it right away.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+      "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.2/lib/three-vrm.module.min.js"
+    }
+  }
+  </script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <main class="page">
+    <section class="card" id="card" aria-live="polite">
+      <!-- idle -->
+      <div class="state" data-state="idle">
+        <button class="add" id="pick" type="button" aria-label="Choose a .glb file">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <h2>Add your .glb</h2>
+        <p class="muted">or drop it anywhere on this page</p>
+        <details class="options">
+          <summary>Options</summary>
+          <label>Size budget <span><input id="maxMb" type="number" min="1" max="100" step="0.5" value="10"> MB</span></label>
+          <label>Author <input id="author" type="text" placeholder="Written into the VRM metadata" maxlength="80"></label>
+        </details>
+      </div>
+      <!-- converting -->
+      <div class="state" data-state="busy" hidden>
+        <div class="ring" aria-hidden="true"></div>
+        <h2 id="busyTitle">Converting…</h2>
+        <p class="muted file" id="busyFile"></p>
+        <p class="log" id="busyLog"></p>
+      </div>
+      <!-- done -->
+      <div class="state" data-state="done" hidden>
+        <div class="check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <h2>Your VRM is ready</h2>
+        <p class="file" id="doneFile"></p>
+        <p class="muted" id="doneInfo"></p>
+        <div class="actions">
+          <button class="btn primary" id="tryBtn" type="button">Try it</button>
+          <a class="btn" id="dlBtn" download>Download</a>
+        </div>
+        <button class="link" id="againBtn" type="button">Convert another</button>
+      </div>
+      <!-- error -->
+      <div class="state" data-state="fail" hidden>
+        <div class="check bad" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></div>
+        <h2>Conversion failed</h2>
+        <p class="err" id="failMsg"></p>
+        <button class="btn" id="retryBtn" type="button">Try another file</button>
+      </div>
+      <input id="file" type="file" accept=".glb,model/gltf-binary" hidden>
+      <footer class="engine"><i id="engineDot"></i><span id="engineTxt">Loading converter…</span></footer>
+    </section>
+
+    <section class="intro">
+      <h1>GLB in.<br>VRM out.</h1>
+      <p>Turns a rigged humanoid <b>.glb</b> (Mixamo or Avaturn) into a <b>VRM 0.0</b> avatar with a normalized skeleton, ready for web metaverses — then lets you walk around with it.</p>
+      <ul>
+        <li><b>Private.</b> The conversion runs on your device; the file is never uploaded.</li>
+        <li><b>Light.</b> Output kept under the size budget (10 MB by default).</li>
+        <li><b>Expressive.</b> ARKit blendshapes become VRM expressions and blinks.</li>
+      </ul>
+    </section>
+  </main>
+
+  <div class="dropzone" id="dropzone" hidden><div>Drop your .glb</div></div>
+
+  <div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-labelledby="vTitle">
+    <div class="window">
+      <header>
+        <strong id="vTitle"></strong><span class="muted" id="vSize"></span>
+        <span class="grow"></span>
+        <a class="btn small primary" id="vDl" download>Download .vrm</a>
+        <button class="close" id="vClose" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg>
+        </button>
+      </header>
+      <div class="stage" id="stage">
+        <div class="loading" id="vLoading">Loading avatar…</div>
+        <div class="help">
+          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
+          <span><kbd>Shift</kbd> run</span>
+          <span><kbd>Space</kbd> jump</span>
+          <span><kbd>Drag</kbd> look</span>
+          <span><kbd>Wheel</kbd> zoom · first person</span>
+        </div>
+        <button class="jump" id="vJump" type="button" aria-label="Jump">Jump</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
