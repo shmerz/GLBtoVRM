@@ -38,6 +38,21 @@ After a conversion, a window opens with the avatar on an endless floor. The cont
 | mouse wheel | zoom; below 1 m it switches to first person |
 | touch | joystick on the left half, look on the right, **Jump** button |
 
+## Animation editor
+
+After converting an avatar, click **Animation editor** in the try-it window. On desktop, tools sit in the left sidebar with the full-body preview on the right and the timeline below it. On mobile, the preview stays above compact controls and the timeline; settings, precision inputs and exports expand only when needed. **Fit full avatar**, **Front**, **Side** and zoom buttons work with touch as well as a mouse. The camera reframes on viewport or panel-size changes.
+
+1. Click a blue joint directly on the avatar (or choose a bone from the dropdown), then drag a colored rotation ring to pose it. The selected joint turns orange. Drag the background to orbit and use the wheel to zoom. Optional X/Y/Z values allow precise adjustments. **Skeleton** shows the bone hierarchy.
+2. Click **Save pose keyframe** to record the whole body at the current time.
+3. Move the timeline, change the pose and save another keyframe. Click a saved time to select it; **Delete keyframe** removes it.
+4. Use **Play** and **Loop** to preview. Rotations interpolate using quaternion slerp. The initial keys at 0 and 2 seconds are the rest pose; replace them to set your start and end poses. Match the first and last poses for a seamless loop.
+5. **Download animation .glb** exports the avatar's skeleton and one animation clip, without meshes or textures. **Download Hyperfy .glb** adapts humanoid bone names, thumb naming and quaternion axes to Hyperfy's emote importer. Eye animation is omitted from the Hyperfy export because its importer has no eye mapping. The importer was checked against the local Hyperfy source; playback in a live Hyperfy world remains to be checked.
+6. **Save project** downloads editable JSON; **Open project** restores it on an avatar with the required humanoid bones. The project uses humanoid bone names rather than avatar-specific node names. It is also kept in memory when closing and reopening the same avatar preview; save JSON to keep it across page reloads or a new conversion.
+
+Duration can be 0.1–120 seconds and cannot be shorter than the last saved key. Extend it before placing keys later in time. Edits to a pose must be saved as a keyframe before scrubbing, playing or exporting. This first editor handles bone rotations; root translation, inverse kinematics, facial animation and video capture are future additions. Loop is a preview setting and GLB metadata hint: the destination player controls playback looping.
+
+Validation (2026-11-01): browser checks on `campus-a-new.vrm` covered pose insertion/deletion, quaternion interpolation, JSON reload/validation, non-loop playback, switching modes, binary GLB reload and matching exported rotation. Direct joint selection and dragging the rotation rings were also checked in the browser. The studio layout was checked at desktop size, 390×844, 320×667 and 844×390; mobile panels and the timeline had no horizontal overflow, and the full-body preview reframed when panels opened. The Hyperfy export was passed through its actual `createEmoteFactory` and checked for body/finger mapping and restored authored rotation.
+
 ## Command line
 
 The converter is a single script, `glb2vrm0.py`. The site runs this same script unchanged. It needs `numpy`, plus `Pillow` when textures are re-encoded or a material uses BLEND alpha.
@@ -80,6 +95,7 @@ The VRM metadata uses the author from the options, and a restrictive default lic
 | `worker.js` | loads Pyodide (numpy and Pillow) and runs `glb2vrm0.py` on the dropped file |
 | `glb2vrm0.py` | the converter (also usable from the command line) |
 | `viewer.js` | try-it scene: three.js 0.170 with @pixiv/three-vrm 3.4.2, player controller, camera, endless grid |
+| `animation-editor.js` | keyframe editor, project save/load, GLB and Hyperfy emote export |
 | `emotes.js`, `emotes/` | Hyperfy's locomotion clips and their retargeting onto the VRM |
 
 ## License

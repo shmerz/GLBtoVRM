@@ -51,7 +51,7 @@ async function openViewer() {
   try {
     const { Viewer } = await import('./viewer.js');
     viewer ??= new Viewer($('stage'), $('vJump'));
-    await viewer.open(result.buffer.slice(0));
+    await viewer.open(result.buffer.slice(0), result);
     $('vLoading').hidden = true;
   } catch (e) {
     console.error(e);

@@ -86,12 +86,69 @@
       <header>
         <strong id="vTitle"></strong><span class="muted" id="vSize"></span>
         <span class="grow"></span>
+        <button class="btn small" id="editBtn" type="button" disabled>Animation editor</button>
         <a class="btn small primary" id="vDl" download>Download .vrm</a>
         <button class="close" id="vClose" type="button" aria-label="Close">
           <svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg>
         </button>
       </header>
+      <div class="viewer-workspace" id="viewerWorkspace">
+      <aside class="animation-editor" id="animationEditor" hidden aria-label="Animation tools">
+        <div class="editor-heading"><span class="eyebrow">ANIMATION</span><h2>Make your move.</h2></div>
+        <div class="pose-tools">
+          <label class="bone-field" for="animBone">Selected joint</label>
+          <select id="animBone" aria-label="Selected joint"></select>
+          <div class="pose-options">
+            <button class="tool-button" id="animReset" type="button">Reset pose</button>
+            <label class="toggle-label"><input id="animSkeleton" type="checkbox" checked> Skeleton</label>
+          </div>
+        </div>
+        <div class="editor-drawers">
+          <details class="editor-disclosure">
+            <summary>Animation settings</summary>
+            <div class="drawer-content">
+              <label>Name <input id="animName" value="My animation" maxlength="80"></label>
+              <label>Duration <span><input id="animDuration" type="number" min="0.1" max="120" step="0.1" value="2"> s</span></label>
+            </div>
+          </details>
+          <details class="editor-disclosure">
+            <summary>Fine adjustment</summary>
+            <div class="drawer-content axis-fields">
+              <label>X° <input id="animX" type="number" min="-180" max="180" step="1" value="0"></label>
+              <label>Y° <input id="animY" type="number" min="-180" max="180" step="1" value="0"></label>
+              <label>Z° <input id="animZ" type="number" min="-180" max="180" step="1" value="0"></label>
+            </div>
+          </details>
+          <details class="editor-disclosure">
+            <summary>Save &amp; export</summary>
+            <div class="drawer-content export-actions">
+              <button class="tool-button" id="animHyperfy" type="button">Hyperfy animation .glb</button>
+              <button class="tool-button" id="animExport" type="button">Animation .glb</button>
+              <button class="tool-button" id="animSave" type="button">Save project</button>
+              <button class="tool-button" id="animLoad" type="button">Open project</button>
+              <input id="animFile" type="file" accept=".json,application/json" hidden>
+            </div>
+          </details>
+          <details class="editor-disclosure editor-guide">
+            <summary>How to pose</summary>
+            <p>Tap a blue joint, then drag a colored ring. Drag the background to orbit. Save each pose on the timeline.</p>
+            <p>GLB downloads contain the skeleton and animation. Save a project to continue editing later.</p>
+          </details>
+        </div>
+        <span id="animStatus" class="editor-status" role="status">Select a joint to start.</span>
+      </aside>
       <div class="stage" id="stage">
+        <div class="studio-overlay" id="studioOverlay" hidden>
+          <div class="studio-caption"><span class="eyebrow">POSE STUDIO</span><strong id="selectedJointLabel">Left upper arm</strong></div>
+          <div class="view-tools" aria-label="Camera controls">
+            <button id="animFit" type="button" title="Fit full avatar" aria-label="Fit full avatar">⛶</button>
+            <button id="animFront" type="button" title="Front view" aria-label="Front view">Front</button>
+            <button id="animSide" type="button" title="Side view" aria-label="Side view">Side</button>
+            <button id="animZoomIn" type="button" title="Zoom in" aria-label="Zoom in">+</button>
+            <button id="animZoomOut" type="button" title="Zoom out" aria-label="Zoom out">−</button>
+          </div>
+          <span class="studio-hint">Select a joint · drag a ring</span>
+        </div>
         <div class="loading" id="vLoading">Loading avatar…</div>
         <div class="help">
           <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
@@ -101,6 +158,19 @@
           <span><kbd>Wheel</kbd> zoom · first person</span>
         </div>
         <button class="jump" id="vJump" type="button" aria-label="Jump">Jump</button>
+      </div>
+      <section class="editor-timeline" id="editorTimeline" hidden aria-label="Animation timeline controls">
+        <div class="timeline-controls">
+          <button class="play-button" id="animPlay" type="button">Play</button>
+          <label class="toggle-label"><input id="animLoop" type="checkbox" checked> Loop</label>
+          <label class="time-field"><input id="animTime" aria-label="Current time in seconds" type="number" min="0" max="2" step="0.01" value="0"><span>/ <span id="animDurationLabel">2.00</span> s</span></label>
+          <span class="grow"></span>
+          <button class="btn small primary" id="animKey" type="button">Save pose</button>
+          <button class="delete-key" id="animDelete" type="button" aria-label="Delete selected keyframe" title="Delete selected keyframe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5m4-5v5"/></svg></button>
+        </div>
+        <input id="animScrub" type="range" aria-label="Animation timeline" min="0" max="2" step="0.01" value="0">
+        <div id="animKeys" class="editor-keys" aria-label="Saved keyframes"></div>
+      </section>
       </div>
     </div>
   </div>

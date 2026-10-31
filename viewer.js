@@ -6,6 +6,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { loadEmotes } from './emotes.js';
+import { AnimationEditor } from './animation-editor.js';
 
 const WALK = 3, RUN = 6, GRAVITY = 20, JUMP_HEIGHT = 1.5, FAR = 120;
 const MIN_ZOOM = 0, MAX_ZOOM = 8, LOOK_SPEED = 0.005, ZOOM_SPEED = 0.004;
@@ -48,8 +49,10 @@ export class Viewer {
     new ResizeObserver(() => this.resize()).observe(stage);
   }
 
-  async open(buffer) {
+  async open(buffer, animationId) {
     this.close();
+    if (animationId !== this.animationId) this.savedAnimation = null;
+    this.animationId = animationId;
     const loader = new GLTFLoader();
     loader.register((p) => new VRMLoaderPlugin(p));
     const [gltf, emotes] = await Promise.all([loader.parseAsync(buffer, ''), this.emotes]);
@@ -84,6 +87,9 @@ export class Viewer {
       this.poses[key] = { action, weight: 0, target: 0, active: false };
     }
 
+    this.editor = new AnimationEditor(this);
+    if (this.savedAnimation) this.editor.loadProject(this.savedAnimation);
+
     this.player = { vel: new THREE.Vector3(), vy: 0, grounded: true, jumped: false, jumping: false, falling: false, fallTimer: 0, fallStartY: 0, blink: 2 };
     this.cam = { rotation: new THREE.Euler(-15 * THREE.MathUtils.DEG2RAD, 0, 0, 'YXZ'), zoom: 1.5, curZoom: 1.5, position: new THREE.Vector3(), quaternion: new THREE.Quaternion() };
     this.cam.quaternion.setFromEuler(this.cam.rotation);
@@ -96,6 +102,9 @@ export class Viewer {
   }
 
   close() {
+    if (this.editor) this.savedAnimation = this.editor.project();
+    this.editor?.dispose();
+    this.editor = null;
     this.renderer.setAnimationLoop(null);
     this.keys.clear();
     if (this.vrm) {
@@ -112,12 +121,13 @@ export class Viewer {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.editor?.fitDistance();
   }
 
   bindInput(jumpBtn) {
     const el = this.renderer.domElement;
     addEventListener('keydown', (e) => {
-      if (!this.vrm || e.metaKey || e.ctrlKey) return;
+      if (!this.vrm || this.editor?.active || e.metaKey || e.ctrlKey || /INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)) return;
       this.keys.add(e.code);
       if (/^(Space|Arrow)/.test(e.code)) e.preventDefault();
     });
@@ -127,13 +137,15 @@ export class Viewer {
 
     el.addEventListener('pointerdown', (e) => {
       el.focus();
+      if (this.editor?.handlePointerDown(e)) return;
       el.setPointerCapture(e.pointerId);
       // touch: the left half of the stage is a joystick, the rest looks around
-      if (e.pointerType === 'touch' && e.offsetX < el.clientWidth * 0.45 && !this.stick)
+      if (!this.editor?.active && e.pointerType === 'touch' && e.offsetX < el.clientWidth * 0.45 && !this.stick)
         this.stick = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: 0, y: 0 };
       else if (!this.drag) this.drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
     });
     el.addEventListener('pointermove', (e) => {
+      if (this.editor?.transform?.dragging) return;
       if (this.stick?.id === e.pointerId) {
         const dx = e.clientX - this.stick.x0, dy = e.clientY - this.stick.y0, l = Math.hypot(dx, dy), k = Math.min(l, 50) / (l || 1);
         this.stick.x = (dx * k) / 50; this.stick.y = (dy * k) / 50;
@@ -149,13 +161,27 @@ export class Viewer {
     el.addEventListener('pointercancel', up);
     el.addEventListener('wheel', (e) => {
       e.preventDefault();
-      if (this.cam) this.cam.zoom = THREE.MathUtils.clamp(this.cam.zoom + e.deltaY * ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM);
+      if (this.cam) {
+        if (this.editor?.active) {
+          this.editor.zoomFactor = THREE.MathUtils.clamp(this.editor.zoomFactor * Math.exp(e.deltaY * 0.001), 0.35, 3);
+          this.editor.fitDistance();
+        } else this.cam.zoom = THREE.MathUtils.clamp(this.cam.zoom + e.deltaY * ZOOM_SPEED, MIN_ZOOM, MAX_ZOOM);
+      }
     }, { passive: false });
     el.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
   frame() {
     const delta = Math.min(this.clock.getDelta(), 1 / 20);
+    if (this.editor?.active) {
+      this.editor.update(delta);
+      const cam = this.cam;
+      cam.quaternion.setFromEuler(cam.rotation);
+      this.camera.quaternion.copy(cam.quaternion);
+      this.camera.position.copy(this.editor.target).addScaledVector(v1.copy(BACKWARD).applyQuaternion(cam.quaternion), cam.zoom);
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
     const p = this.player, cam = this.cam, k = this.keys, base = this.base;
     cam.quaternion.setFromEuler(cam.rotation);
 

@@ -141,3 +141,126 @@ kbd { font: 600 11px/1 Inter, sans-serif; background: #fff; border: 1px solid #c
   .window { border-radius: 0; height: 100%; }
   .window header .muted { display: none; }
 }
+
+/* Pose studio: controls stay beside the canvas, never over the avatar. */
+.viewer-workspace { flex: 1; min-height: 0; display: flex; }
+.viewer-workspace > .stage { min-width: 0; }
+.window.is-editing { width: min(1480px, 100%); height: 100%; }
+.is-editing .viewer-workspace { display: grid; grid-template-columns: 264px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+.is-editing .stage { grid-column: 2; grid-row: 1; }
+.animation-editor { grid-column: 1; grid-row: 1 / 3; min-height: 0; padding: 26px 20px 18px; overflow-y: auto; overscroll-behavior: contain; background: #fbfbfd; border-right: 1px solid #e6e8ef; }
+.eyebrow { color: #798299; font-size: 10px; font-weight: 700; letter-spacing: .16em; }
+.editor-heading h2 { font-size: 24px; line-height: 1.2; letter-spacing: -.05em; margin: 6px 0 28px; }
+.bone-field { display: block; color: #798299; font-size: 12px; margin-bottom: 8px; }
+#animBone { width: 100%; font: 500 14px Inter, sans-serif; color: #252d42; border: 1px solid #dfe3ed; border-radius: 10px; background: white; padding: 12px 9px; }
+.pose-options { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 24px; }
+.tool-button { font: 500 12px Inter, sans-serif; padding: 10px 12px; min-height: 40px; border: 1px solid #e2e5ed; border-radius: 9px; background: white; text-align: left; }
+.tool-button:hover { background: #eef1ff; border-color: #b7c2ff; }
+.toggle-label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; color: #616b80; }
+.toggle-label input { accent-color: var(--accent); width: 16px; height: 16px; }
+.editor-disclosure { border-top: 1px solid #e6e8ef; }
+.editor-disclosure summary { cursor: pointer; font-size: 13px; font-weight: 500; padding: 16px 2px; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+.editor-disclosure summary::after { content: '+'; font-size: 18px; font-weight: 400; color: #8490a6; }
+.editor-disclosure[open] summary::after { content: '−'; }
+.drawer-content { display: grid; gap: 12px; padding: 0 0 16px; }
+.drawer-content label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #616b80; }
+.drawer-content input { min-width: 0; width: 65%; padding: 9px; border: 1px solid #dfe3ed; border-radius: 8px; font: inherit; color: #252d42; background: white; }
+.drawer-content input[type=number] { width: 70px; }
+.drawer-content label > span { font-size: 12px; }
+.export-actions { gap: 7px; }
+.editor-guide p { font-size: 12px; color: #616b80; margin: 0 0 14px; }
+.editor-status { display: block; font-size: 11px; line-height: 1.5; margin-top: 22px; color: #8490a6; }
+.studio-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.studio-caption { position: absolute; top: 22px; left: 24px; display: grid; gap: 4px; }
+.studio-caption strong { color: #3a465c; font-size: 13px; font-weight: 500; }
+.view-tools { position: absolute; top: 17px; right: 18px; display: flex; gap: 4px; padding: 4px; border-radius: 13px; background: #ffffffc9; border: 1px solid #ffffffd9; pointer-events: auto; }
+.view-tools button { min-width: 38px; height: 38px; padding: 0 9px; border: 0; background: transparent; border-radius: 8px; font-size: 12px; color: #45516b; touch-action: manipulation; }
+.view-tools button:hover { background: white; }
+#animFit, #animZoomIn, #animZoomOut { font-size: 22px; }
+.studio-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); font-size: 11px; letter-spacing: .02em; color: #68758b; background: #ffffffad; border: 1px solid #ffffff9c; padding: 6px 12px; border-radius: 99px; white-space: nowrap; }
+.editor-timeline { grid-column: 2; grid-row: 2; padding: 14px 22px 12px; min-width: 0; border-top: 1px solid #e0e5ed; background: white; }
+.timeline-controls { display: flex; align-items: center; gap: 12px; }
+.play-button { border: 0; border-radius: 10px; height: 40px; min-width: 70px; background: #edf0ff; color: #3d5afe; font-size: 13px; font-weight: 600; }
+.time-field { display: flex; gap: 5px; align-items: center; font-size: 11px; color: #8490a6; white-space: nowrap; }
+#animTime { font: 500 12px ui-monospace, monospace; width: 64px; border: 1px solid #e4e8ef; border-radius: 7px; padding: 8px 4px 8px 8px; }
+.delete-key { display: grid; place-items: center; flex-shrink: 0; height: 40px; width: 40px; border: 1px solid #e6e8ef; border-radius: 10px; background: white; color: #8390a5; }
+.delete-key svg { width: 19px; height: 19px; }
+#animScrub { display: block; width: 100%; height: 24px; margin: 7px 0 0; accent-color: var(--accent); cursor: pointer; touch-action: pan-y; }
+.editor-keys { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+.editor-keys .btn { height: 28px; min-height: 28px; padding: 0 10px; font: 11px ui-monospace, monospace; border-radius: 7px; flex-shrink: 0; color: #798299; }
+.editor-keys [aria-pressed=true] { background: #edf0ff; color: #3d5afe; border-color: #b8c4ff; }
+button:disabled { opacity: .5; cursor: default; }
+button:focus-visible, summary:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #879cff; outline-offset: 2px; }
+@media (max-width: 1050px) {
+  .studio-caption { top: 14px; left: 16px; }
+  .view-tools { top: 54px; right: 12px; }
+  .is-editing .viewer-workspace { grid-template-columns: 230px minmax(0, 1fr); }
+  .animation-editor { padding: 22px 16px 16px; }
+}
+@media (max-width: 700px) {
+  .viewer { padding: 0; height: 100dvh; }
+  .window, .window.is-editing { height: 100%; border-radius: 0; }
+  .window header { padding: 8px 10px; gap: 6px; flex-wrap: nowrap; min-height: 52px; }
+  .window header strong { max-width: 25%; font-size: 12px; }
+  .window header .btn { padding: 0 10px; font-size: 11px; height: 34px; white-space: nowrap; }
+  .window header .close { flex-shrink: 0; }
+  .is-editing .viewer-workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto auto; }
+  .is-editing .stage { grid-column: 1; grid-row: 1; }
+  .animation-editor { grid-column: 1; grid-row: 2; padding: 10px 14px; border-right: 0; border-top: 1px solid #e0e5ed; max-height: 26dvh; }
+  .editor-heading, .editor-status, .editor-guide { display: none; }
+  .pose-tools { display: flex; align-items: center; gap: 8px; }
+  .bone-field { display: none; }
+  #animBone { flex: 1; width: 0; min-width: 0; font-size: 13px; padding: 10px; min-height: 44px; }
+  .pose-options { margin: 0; flex-shrink: 0; }
+  .pose-options .toggle-label { display: none; }
+  .tool-button { min-height: 44px; }
+  .editor-drawers { display: flex; flex-wrap: wrap; column-gap: 16px; margin-top: 4px; }
+  .editor-disclosure { border: 0; flex: 1; min-width: 85px; }
+  .editor-disclosure summary { padding: 8px 0; font-size: 11px; gap: 5px; min-height: 36px; }
+  .drawer-content { padding-top: 4px; }
+  .drawer-content label { flex-wrap: wrap; }
+  .drawer-content input { width: 100%; font-size: 16px; }
+  .drawer-content input[type=number] { width: 100%; }
+  .export-actions .tool-button { font-size: 11px; padding: 8px; }
+  .editor-timeline { grid-column: 1; grid-row: 3; padding: 10px 14px max(8px, env(safe-area-inset-bottom)); }
+  .timeline-controls { gap: 8px; }
+  .timeline-controls .grow { display: none; }
+  .timeline-controls .btn { margin-left: auto; min-height: 44px; padding: 0 13px; font-size: 12px; }
+  .play-button, .delete-key { min-height: 44px; }
+  .play-button { min-width: 56px; }
+  .time-field > span { display: none; }
+  #animTime { width: 54px; min-height: 40px; font-size: 16px; }
+  .timeline-controls .toggle-label { font-size: 11px; gap: 2px; }
+  .editor-keys .btn { min-height: 34px; }
+  .view-tools { top: 10px; right: 10px; padding: 3px; gap: 1px; }
+  .view-tools button { min-width: 40px; min-height: 44px; padding: 0 7px; }
+  .studio-caption { top: 66px; left: 14px; }
+  .studio-caption .eyebrow { display: none; }
+  .studio-caption strong { font-size: 11px; }
+  .studio-hint { bottom: 10px; font-size: 10px; padding: 4px 9px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .viewer { padding: 0; }
+  .window { height: 100%; border-radius: 0; }
+  .is-editing .viewer-workspace { grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .animation-editor { grid-column: 1; grid-row: 1 / 3; max-height: none; padding: 12px; }
+  .is-editing .stage { grid-column: 2; grid-row: 1; }
+  .editor-timeline { grid-column: 2; grid-row: 2; padding: 6px 12px; }
+  .editor-heading, .editor-status, .studio-hint { display: none; }
+  .editor-keys .btn { height: 24px; min-height: 24px; }
+  #animScrub { margin: 0; height: 18px; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .animation-editor { max-height: 30dvh; }
+  .editor-disclosure[open] { flex-basis: 100%; order: 2; }
+  .editor-disclosure[open] .drawer-content { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .editor-disclosure[open] .axis-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 360px) {
+  .timeline-controls { gap: 6px; }
+  .timeline-controls .toggle-label { font-size: 0; gap: 0; }
+  .timeline-controls .btn { padding: 0 10px; }
+}
+@media (max-width: 360px) {
+  .view-tools { top: 2px; }
+}
