@@ -115,13 +115,21 @@ if normal_png:
 # Hair cards are also made double-sided with a lower cutoff (as Saratoga's loader does for `haircut`): seen from inside
 # the hairstyle the back faces were culled and the head looked bald; 0.25 keeps the softer strands.
 MASK_CUTOFF=0.25
-def alpha_binary(ti):
-    from PIL import Image
-    a=np.asarray(Image.open(io.BytesIO(src_images[textures[ti]['source']][1])).convert('RGBA').getchannel('A'),float)/255
-    return ((a>0.1)&(a<0.9)).mean()<0.25 and (a<0.1).mean()>0.05
-for m in materials:
+# Alpha is measured only on the texels the material's triangles cover (UV rasterized): atlases shared with the body
+# (Ready Player Me glasses) are almost all opaque and would otherwise pass as binary.
+def alpha_binary(ti,mi):
+    from PIL import Image,ImageDraw
+    img=Image.open(io.BytesIO(src_images[textures[ti]['source']][1])).convert('RGBA'); W,H=img.size
+    cov=Image.new('L',(W,H)); dr=ImageDraw.Draw(cov)
+    for _,prims in baked:
+        for q in prims:
+            if q['material']!=mi: continue
+            for tri in (q['UV'][q['I'].reshape(-1,3)]%1)*(W,H): dr.polygon([tuple(p) for p in tri],fill=255)
+    a=np.asarray(img.getchannel('A'),float)[np.asarray(cov)>0]/255
+    return len(a)>0 and ((a>0.1)&(a<0.9)).mean()<0.25 and (a<0.1).mean()>0.05
+for mi,m in enumerate(materials):
     t=m.get('pbrMetallicRoughness',{}).get('baseColorTexture')
-    if m.get('alphaMode')=='BLEND' and t and alpha_binary(t['index']): m['alphaMode']='MASK'; m['alphaCutoff']=MASK_CUTOFF; m['doubleSided']=True; print(f"material {m.get('name')}: BLEND -> MASK, double-sided")
+    if m.get('alphaMode')=='BLEND' and t and alpha_binary(t['index'],mi): m['alphaMode']='MASK'; m['alphaCutoff']=MASK_CUTOFF; m['doubleSided']=True; print(f"material {m.get('name')}: BLEND -> MASK, double-sided")
 def shrink(im,data,tex_max):  # re-encode (JPEG q85, PNG optimized) at most tex_max px; keep the original if not smaller
     from PIL import Image
     img=Image.open(io.BytesIO(data)); img.thumbnail((tex_max,tex_max),Image.LANCZOS); buf=io.BytesIO()
