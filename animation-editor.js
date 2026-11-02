@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { createEmoteFactory } from './emotes.js';
 
 const $ = (id) => document.getElementById(id);
 const axes = ['X', 'Y', 'Z'];
@@ -95,11 +97,18 @@ export class AnimationEditor {
       $('animFile').value = '';
       if (!file) return;
       try {
-        if (file.size > 5e6) throw new Error('Project exceeds 5 MB.');
-        const data = JSON.parse(await file.text());
-        this.loadProject(data);
-        this.status('Project loaded.');
-      } catch (error) { this.status('Could not open project: ' + error.message); }
+        const bytes = await file.arrayBuffer();
+        // binary glTF starts with the "glTF" magic
+        if (bytes.byteLength >= 4 && new TextDecoder().decode(bytes.slice(0, 4)) === 'glTF') {
+          if (file.size > 100e6) throw new Error('GLB exceeds 100 MB.');
+          this.status('Importing animation…');
+          this.status(await this.importGLB(bytes, file.name));
+        } else {
+          if (file.size > 5e6) throw new Error('Project exceeds 5 MB.');
+          this.loadProject(JSON.parse(new TextDecoder().decode(bytes)));
+          this.status('Project loaded.');
+        }
+      } catch (error) { this.status('Could not open file: ' + error.message); }
     });
     this.setupGizmo();
     this.renderKeys();
@@ -323,6 +332,56 @@ export class AnimationEditor {
     $('animName').value = typeof data.name === 'string' ? data.name.slice(0, 80) : 'My animation';
     $('animDuration').value = this.duration; $('animLoop').checked = !!data.loop;
     this.renderKeys(); this.seek(0);
+  }
+
+  // Turns an animation GLB into editable keyframes. Accepted: this editor's own exports
+  // (raw-bone or Hyperfy flavour) and Mixamo-rigged clips such as Hyperfy emotes.
+  async importGLB(bytes, fileName) {
+    const glb = await new GLTFLoader().parseAsync(bytes, '');
+    const clip = glb.animations[0];
+    if (!clip) throw new Error('the GLB contains no animation.');
+    const info = glb.scene.userData || {};
+    const byNode = new Map(this.bones.map(([name, node]) => [node.name, name]));
+    const human = new Set(this.bones.map(([name]) => name));
+    const tracks = new Map(); // humanoid bone -> [quaternion track, flip X/Z]
+    const add = (bone, track, flip = false) => { if (bone && human.has(bone)) tracks.set(bone, [track, flip]); };
+    const quaternions = (c) => c.tracks.filter((t) => t.name.endsWith('.quaternion')).map((t) => [t.name.slice(0, -'.quaternion'.length), t]);
+    if (info.animationEditor === 'GLBtoVRM' && info.coordinateSystem === 'VRM 0 raw bones') {
+      for (const [node, track] of quaternions(clip)) add(byNode.get(node), track);
+    } else if (info.animationEditor === 'GLBtoVRM') {
+      // undo the Hyperfy export: thumb renaming and X/Z quaternion flip
+      const importName = (n) => n.replace(/Thumb(Proximal|Intermediate)$/, (_, p) => p === 'Proximal' ? 'ThumbMetacarpal' : 'ThumbProximal');
+      for (const [node, track] of quaternions(clip)) add(importName(node), track, true);
+    } else {
+      // Mixamo rig: retarget to this avatar exactly as the walk/run emotes are
+      const raw = (b) => this.viewer.vrm.humanoid.getRawBoneNode(b);
+      const retargeted = createEmoteFactory(glb).toClip({ rootToHips: 1, version: this.viewer.vrm.meta?.metaVersion, getBoneName: (b) => raw(b)?.name });
+      for (const [node, track] of quaternions(retargeted)) add(byNode.get(node), track);
+    }
+    if (tracks.size < 5) throw new Error('no humanoid bones recognized. Use a Mixamo-rigged animation or a GLB exported by this editor.');
+    const duration = Math.min(120, Math.round(clip.duration * 1000) / 1000);
+    if (!(duration >= 0.1)) throw new Error('the animation is shorter than 0.1 s.');
+    // Keep the clip's own key times when sparse; dense mocap is resampled to at most 30 keys per second.
+    const steps = Math.min(1999, Math.max(1, Math.round(duration * 30)));
+    const native = [...new Set([...tracks.values()].flatMap(([t]) => [...t.times].map((x) => Math.round(x * 1000) / 1000)))].filter((x) => x >= 0 && x <= duration);
+    let times = native.length <= steps + 1 ? [...new Set([0, ...native, duration])] : Array.from({ length: steps + 1 }, (_, i) => Math.round(i * duration / steps * 1000) / 1000);
+    times = times.sort((a, b) => a - b).filter((t, i, all) => i === 0 || t - all[i - 1] >= 0.005);
+    const interpolants = [...tracks].map(([bone, [track, flip]]) => [bone, track.createInterpolant(), flip]);
+    const keys = times.map((time) => {
+      const pose = clone(this.rest);
+      for (const [bone, interpolant, flip] of interpolants) {
+        const q = [...interpolant.evaluate(time)];
+        pose[bone] = flip ? q.map((v, i) => i % 2 === 0 ? -v : v) : q;
+      }
+      return { time, pose };
+    });
+    const name = (clip.name && clip.name !== 'Take 001' && !/^mixamo\.com$/i.test(clip.name) ? clip.name : fileName.replace(/(\.hyperfy)?\.glb$/i, '')).slice(0, 80);
+    this.loadProject({ format: 'glbtovrm-animation', version: 1, name, duration, loop: info.loop ?? true, keys });
+    const notes = [];
+    if (glb.animations.length > 1) notes.push(`only the first of ${glb.animations.length} clips was imported`);
+    if (clip.duration > 120) notes.push('trimmed to 120 s');
+    if (clip.tracks.some((t) => t.name.endsWith('.position'))) notes.push('hips movement is not editable yet (rotations only)');
+    return `Imported ${tracks.size} bones, ${keys.length} keyframes.` + (notes.length ? ' Note: ' + notes.join('; ') + '.' : '');
   }
 
   async exportGLB(hyperfy = false) {

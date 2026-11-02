@@ -125,14 +125,15 @@
               <button class="tool-button" id="animHyperfy" type="button">Hyperfy animation .glb</button>
               <button class="tool-button" id="animExport" type="button">Animation .glb</button>
               <button class="tool-button" id="animSave" type="button">Save project</button>
-              <button class="tool-button" id="animLoad" type="button">Open project</button>
-              <input id="animFile" type="file" accept=".json,application/json" hidden>
+              <button class="tool-button" id="animLoad" type="button">Open project / .glb</button>
+              <input id="animFile" type="file" accept=".json,.glb,application/json,model/gltf-binary" hidden>
             </div>
           </details>
           <details class="editor-disclosure editor-guide">
             <summary>How to pose</summary>
             <p>Tap a blue joint, then drag a colored ring. Drag the background to orbit. Save each pose on the timeline.</p>
             <p>GLB downloads contain the skeleton and animation. Save a project to continue editing later.</p>
+            <p>Open project also imports an animation .glb (Mixamo rig, or exported here) as keyframes to fix.</p>
           </details>
         </div>
         <span id="animStatus" class="editor-status" role="status">Select a joint to start.</span>

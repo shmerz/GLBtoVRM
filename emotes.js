@@ -24,20 +24,27 @@ for (const [S, s] of [['Left', 'left'], ['Right', 'right']]) {
   });
   for (const [F, f] of [['Thumb', 'Thumb'], ['Index', 'Index'], ['Middle', 'Middle'], ['Ring', 'Ring'], ['Pinky', 'Little']])
     ['Proximal', 'Intermediate', 'Distal'].forEach((p, i) => (BONES[`${S}Hand${F}${i + 1}`] = s + f + p));
+  // Unity FBX variations, as in Hyperfy's table
+  for (const p of ['UpperLeg', 'LowerLeg', 'UpperArm', 'LowerArm']) BONES[S + p] = s + p;
 }
-const vrmBoneOf = (name) => BONES[name.replace(/^mixamorig/, '')];
+Object.assign(BONES, { Chest: 'chest', UpperChest: 'upperChest' });
+// VRM humanoid names map to themselves (clips authored on a normalized VRM rig, e.g. Hyperfy's emote-sit)
+for (const name of Object.values(BONES)) BONES[name] = name;
+// also accepts numbered rig prefixes ("mixamorig1Hips", as in Avaturn exports)
+const vrmBoneOf = (name) => BONES[name.replace(/^mixamorig\d*/, '')];
 
 const q1 = new THREE.Quaternion(), restInv = new THREE.Quaternion(), parentRest = new THREE.Quaternion();
 
-function createEmoteFactory(glb) {
+export function createEmoteFactory(glb) {
   const clip = glb.animations[0];
   const scale = glb.scene.children[0].scale.x; // armature
   const yOffset = -0.05 / scale; // Hyperfy: avatars otherwise float ~5 cm above the ground
   // keep the quaternions plus the root/hips position, drop scale and the other positions
   clip.tracks = clip.tracks.filter((track) => {
+    if (!glb.scene.getObjectByName(track.name.split('.')[0])?.parent) return false; // user-supplied GLBs may animate missing nodes
     if (!(track instanceof THREE.VectorKeyframeTrack)) return true;
     const [name, type] = track.name.split('.');
-    return type === 'position' && (name === 'Root' || name === 'mixamorigHips');
+    return type === 'position' && (name === 'Root' || vrmBoneOf(name) === 'hips');
   });
   // bring the rotations into normalized-bone space (see three-vrm PR #1032)
   for (const track of clip.tracks) {
