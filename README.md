@@ -82,7 +82,7 @@ When the input breaks one of these rules, the page shows a one-line reason.
    - humanoid mapping, including fingers and eyes;
    - firstPerson and lookAt settings;
    - expressions built from ARKit shapes;
-   - glTF PBR materials. BLEND hair with an almost-binary alpha channel becomes MASK, to avoid three.js sorting artifacts.
+   - glTF PBR materials. BLEND hair with an almost-binary alpha channel becomes MASK (cutoff 0.25), to avoid three.js sorting artifacts, and double-sided, so the inside of the hairstyle is drawn and the head doesn't look bald.
 4. Fits the size budget. Lossless compaction always runs. If the file is still too big, the converter takes the first of these steps that fits: textures at max 2048 px, then 1024, then 512, then 512 without morph normals, then 256 without morph normals.
 
 The VRM metadata uses the author from the options, and a restrictive default license (redistribution prohibited, author-only use). Edit the metadata in a VRM tool if you need other terms.
