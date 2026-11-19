@@ -86,6 +86,8 @@
       <header>
         <strong id="vTitle"></strong><span class="muted" id="vSize"></span>
         <span class="grow"></span>
+        <select class="avatar-pick" id="avatarPick" aria-label="Avatar" title="Switch avatar: the animation stays, so you can check it on different bodies"></select>
+        <input id="avatarFile" type="file" accept=".vrm,.glb,model/gltf-binary" hidden>
         <button class="btn small" id="editBtn" type="button" disabled>Animation editor</button>
         <a class="btn small primary" id="vDl" download>Download .vrm</a>
         <button class="close" id="vClose" type="button" aria-label="Close">
@@ -101,6 +103,8 @@
           <div class="pose-options">
             <button class="tool-button" id="animReset" type="button">Reset pose</button>
             <label class="toggle-label"><input id="animSkeleton" type="checkbox" checked> Skeleton</label>
+            <label class="toggle-label ik-toggle" title="Hands and feet move with inverse kinematics: drag them and the arm or leg follows"><input id="animIK" type="checkbox" checked> IK hands &amp; feet</label>
+            <label class="toggle-label ik-toggle" title="Seat the avatar on a chair like Hyperfy does; while playing, feet go flat on the floor and hands onto the thighs of each avatar"><input id="animChair" type="checkbox"> Chair test</label>
           </div>
         </div>
         <div class="editor-drawers">
@@ -109,6 +113,7 @@
             <div class="drawer-content">
               <label>Name <input id="animName" value="My animation" maxlength="80"></label>
               <label>Duration <span><input id="animDuration" type="number" min="0.1" max="120" step="0.1" value="2"> s</span></label>
+              <label title="Natural motion (breathing, head sway) added when a pose is copied to the later keys. 0 = exact copies">Variation on copies <span><input id="animVary" type="number" min="0" max="10" step="0.5" value="1"> °</span></label>
             </div>
           </details>
           <details class="editor-disclosure">
@@ -117,6 +122,23 @@
               <label>X° <input id="animX" type="number" min="-180" max="180" step="1" value="0"></label>
               <label>Y° <input id="animY" type="number" min="-180" max="180" step="1" value="0"></label>
               <label>Z° <input id="animZ" type="number" min="-180" max="180" step="1" value="0"></label>
+            </div>
+          </details>
+          <details class="editor-disclosure">
+            <summary>Seat contacts</summary>
+            <div class="drawer-content seat-fields">
+              <p class="drawer-note">With Chair test on. Hands rest on the thighs of every avatar at the same relative spot; untick a limb to pose it freely.</p>
+              <div class="limb-grid" role="group" aria-label="Limbs driven by the contacts">
+                <span>Feet on floor</span><label class="toggle-label"><input id="seatFootL" type="checkbox" checked> L</label><label class="toggle-label"><input id="seatFootR" type="checkbox" checked> R</label>
+                <span>Hands on thighs</span><label class="toggle-label"><input id="seatHandL" type="checkbox" checked> L</label><label class="toggle-label"><input id="seatHandR" type="checkbox" checked> R</label>
+              </div>
+              <label>Adjust <select id="seatSide" class="seat-side"><option value="both">Both hands</option><option value="left">Left hand</option><option value="right">Right hand</option></select></label>
+              <label>Along thigh <span><input id="seatAlong" type="range" min="5" max="95" step="1" value="60"><output id="seatAlongOut">60%</output></span></label>
+              <label>Around <span><input id="seatAround" type="range" min="-90" max="90" step="1" value="0"><output id="seatAroundOut">0°</output></span></label>
+              <label>Gap <span><input id="seatGap" type="range" min="-10" max="50" step="1" value="0"><output id="seatGapOut">0 mm</output></span></label>
+              <label>Finger relax <span><input id="seatRelax" type="range" min="0" max="100" step="5" value="50"><output id="seatRelaxOut">50%</output></span></label>
+              <button class="tool-button" id="seatCapture" type="button" title="Turn the hand contact off, place the hand with IK, then press this">Use current hand pose</button>
+              <button class="tool-button" id="seatReset" type="button">Automatic hands</button>
             </div>
           </details>
           <details class="editor-disclosure">
@@ -132,6 +154,7 @@
           <details class="editor-disclosure editor-guide">
             <summary>How to pose</summary>
             <p>Tap a blue joint, then drag a colored ring. Drag the background to orbit. Save each pose on the timeline.</p>
+            <p>With IK on, green joints (hands, feet) move instead of rotating: drag the arrows and the arm or leg follows, keeping the hand or foot orientation. Turn IK off to rotate them.</p>
             <p>GLB downloads contain the skeleton and animation. Save a project to continue editing later.</p>
             <p>Open project also imports an animation .glb (Mixamo rig, or exported here) as keyframes to fix.</p>
           </details>
@@ -166,6 +189,13 @@
           <label class="toggle-label"><input id="animLoop" type="checkbox" checked> Loop</label>
           <label class="time-field"><input id="animTime" aria-label="Current time in seconds" type="number" min="0" max="2" step="0.01" value="0"><span>/ <span id="animDurationLabel">2.00</span> s</span></label>
           <span class="grow"></span>
+          <button class="delete-key" id="animUndo" type="button" aria-label="Undo" title="Undo (⌘Z)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3"/></svg></button>
+          <button class="delete-key" id="animRedo" type="button" aria-label="Redo" title="Redo (⇧⌘Z)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M15 14l5-5-5-5M20 9H10a6 6 0 000 12h3"/></svg></button>
+          <select class="propagate" id="animPropagate" aria-label="Save pose to" title="What Save pose does to the keyframes after this one">
+            <option value="">This key only</option>
+            <option value="delta">+ change to later keys</option>
+            <option value="copy">+ copy pose to later keys</option>
+          </select>
           <button class="btn small primary" id="animKey" type="button">Save pose</button>
           <button class="delete-key" id="animDelete" type="button" aria-label="Delete selected keyframe" title="Delete selected keyframe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5m4-5v5"/></svg></button>
         </div>

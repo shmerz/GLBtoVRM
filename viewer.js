@@ -49,10 +49,11 @@ export class Viewer {
     new ResizeObserver(() => this.resize()).observe(stage);
   }
 
-  async open(buffer, animationId) {
+  // keep: an avatar switch, so the animation being edited and the editor state carry over to the new body.
+  // Returns a short note for the user, if any.
+  async open(buffer, { keep = false } = {}) {
     this.close();
-    if (animationId !== this.animationId) this.savedAnimation = null;
-    this.animationId = animationId;
+    if (!keep) this.saved = null;
     const loader = new GLTFLoader();
     loader.register((p) => new VRMLoaderPlugin(p));
     const [gltf, emotes] = await Promise.all([loader.parseAsync(buffer, ''), this.emotes]);
@@ -64,6 +65,7 @@ export class Viewer {
     for (const n of vrm.scene.children.filter((n) => n.name === 'VRMHumanoidRig')) n.removeFromParent();
     vrm.scene.traverse((o) => { o.frustumCulled = false; });
     this.vrm = vrm;
+    this.face = null;
     this.base = new THREE.Group(); // player position and facing
     this.base.add(vrm.scene);
     this.scene.add(this.base);
@@ -88,21 +90,22 @@ export class Viewer {
     }
 
     this.editor = new AnimationEditor(this);
-    if (this.savedAnimation) this.editor.loadProject(this.savedAnimation);
 
-    this.player = { vel: new THREE.Vector3(), vy: 0, grounded: true, jumped: false, jumping: false, falling: false, fallTimer: 0, fallStartY: 0, blink: 2 };
+    this.player = { vel: new THREE.Vector3(), vy: 0, grounded: true, jumped: false, jumping: false, falling: false, fallTimer: 0, fallStartY: 0 };
     this.cam = { rotation: new THREE.Euler(-15 * THREE.MathUtils.DEG2RAD, 0, 0, 'YXZ'), zoom: 1.5, curZoom: 1.5, position: new THREE.Vector3(), quaternion: new THREE.Quaternion() };
     this.cam.quaternion.setFromEuler(this.cam.rotation);
     this.camera.quaternion.copy(this.cam.quaternion);
     this.firstPerson = false;
+    const note = this.saved ? this.editor.restore(this.saved) : '';
     this.clock.start();
     this.resize();
     this.renderer.setAnimationLoop(() => this.frame());
     this.renderer.domElement.focus();
+    return note;
   }
 
   close() {
-    if (this.editor) this.savedAnimation = this.editor.project();
+    if (this.editor) this.saved = this.editor.snapshot();
     this.editor?.dispose();
     this.editor = null;
     this.renderer.setAnimationLoop(null);
@@ -288,13 +291,42 @@ export class Viewer {
     }
   }
 
+  // Idle face, to show the converted expressions at work (each one only if the avatar has it):
+  // blinks every 2-6 s (60 ms close, 120 ms open, as in Hyperfy's player avatars), a smile that
+  // fades in, holds and fades out every 5-12 s, and now and then a short a-e-i-o-u viseme run.
   blink(delta) {
-    const p = this.player, em = this.vrm.expressionManager;
+    const em = this.vrm.expressionManager;
     if (!em) return;
-    p.blink -= delta;
-    const b = p.blink < 0.15 && p.blink > 0 ? Math.sin((p.blink / 0.15) * Math.PI) : 0;
-    if (p.blink < 0) p.blink = 2 + Math.random() * 4;
-    em.setValue('blink', b);
+    const f = this.face ??= { blinkWait: 2 + Math.random() * 4, blinkTime: -1, smileWait: 3 + Math.random() * 4, smileTime: -1, smileHold: 1.5, talkWait: 6 + Math.random() * 6, talkTime: -1 };
+    const has = (n) => !!em.getExpression(n), smooth = (x) => { x = THREE.MathUtils.clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+
+    let blink = 0;
+    if (f.blinkTime < 0 && (f.blinkWait -= delta) <= 0) f.blinkTime = 0;
+    if (f.blinkTime >= 0) {
+      f.blinkTime += delta;
+      blink = smooth(f.blinkTime < 0.06 ? f.blinkTime / 0.06 : 1 - (f.blinkTime - 0.06) / 0.12);
+      if (f.blinkTime >= 0.18) { f.blinkTime = -1; f.blinkWait = 2 + Math.random() * 4; }
+    }
+
+    let smile = 0;
+    if (f.smileTime < 0 && (f.smileWait -= delta) <= 0) { f.smileTime = 0; f.smileHold = 1 + Math.random() * 2; }
+    if (f.smileTime >= 0) {
+      const t = (f.smileTime += delta), fade = 0.4;
+      smile = 0.8 * smooth(Math.min(t / fade, (f.smileHold + 2 * fade - t) / fade));
+      if (t >= f.smileHold + 2 * fade) { f.smileTime = -1; f.smileWait = 5 + Math.random() * 7; }
+    }
+
+    const vowels = ['aa', 'ee', 'ih', 'oh', 'ou'], step = 0.24, weights = {};
+    if (f.talkTime < 0 && f.smileTime < 0 && (f.talkWait -= delta) <= 0) f.talkTime = 0;
+    if (f.talkTime >= 0) {
+      const t = (f.talkTime += delta), i = Math.floor(t / step);
+      if (i >= vowels.length) { f.talkTime = -1; f.talkWait = 8 + Math.random() * 8; }
+      else weights[vowels[i]] = 0.5 * Math.sin(((t % step) / step) * Math.PI);
+    }
+
+    if (has('blink')) em.setValue('blink', blink);
+    if (has('happy')) em.setValue('happy', smile);
+    for (const v of vowels) if (has(v)) em.setValue(v, weights[v] ?? 0);
     em.update();
   }
 }

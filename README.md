@@ -95,7 +95,7 @@ The VRM metadata uses the author from the options, and a restrictive default lic
 | `app.js` | file picking and drag & drop, talks to the worker, download link |
 | `worker.js` | loads Pyodide (numpy and Pillow) and runs `glb2vrm0.py` on the dropped file |
 | `glb2vrm0.py` | the converter (also usable from the command line) |
-| `viewer.js` | try-it scene: three.js 0.170 with @pixiv/three-vrm 3.4.2, player controller, camera, endless grid |
+| `viewer.js` | try-it scene: three.js 0.170 with @pixiv/three-vrm 3.4.2, player controller, camera, endless grid; idle face (random blinks, smiles and a-e-i-o-u visemes, when the avatar has them) |
 | `animation-editor.js` | keyframe editor, project save/load, GLB and Hyperfy emote export |
 | `emotes.js`, `emotes/` | Hyperfy's locomotion clips and their retargeting onto the VRM |
 
