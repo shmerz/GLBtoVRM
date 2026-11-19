@@ -2,7 +2,7 @@
 
 Turn a rigged humanoid **.glb** (Mixamo or Avaturn rig) into a **VRM 0.0** avatar, right in your browser, then walk around with it before downloading.
 
-**▶ Try it: [glbtovrm.netlify.app](https://glbtovrm.netlify.app)**
+**▶ Try it: [shmerz.github.io/GLBtoVRM](https://shmerz.github.io/GLBtoVRM/)**
 
 ![GLBtoVRM home page: drop a .glb file](docs/home.jpg)
 
