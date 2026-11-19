@@ -293,11 +293,12 @@ export class Viewer {
 
   // Idle face, to show the converted expressions at work (each one only if the avatar has it):
   // blinks every 2-6 s (60 ms close, 120 ms open, as in Hyperfy's player avatars), a smile that
-  // fades in, holds and fades out every 5-12 s, and now and then a short a-e-i-o-u viseme run.
+  // fades in, holds and fades out every 5-12 s, and every 3-7 s a short a-e-i-o-u viseme run
+  // (the wait runs during smiles too; a run due mid-smile starts right after it).
   blink(delta) {
     const em = this.vrm.expressionManager;
     if (!em) return;
-    const f = this.face ??= { blinkWait: 2 + Math.random() * 4, blinkTime: -1, smileWait: 3 + Math.random() * 4, smileTime: -1, smileHold: 1.5, talkWait: 6 + Math.random() * 6, talkTime: -1 };
+    const f = this.face ??= { blinkWait: 2 + Math.random() * 4, blinkTime: -1, smileWait: 3 + Math.random() * 4, smileTime: -1, smileHold: 1.5, talkWait: 2 + Math.random() * 3, talkTime: -1 };
     const has = (n) => !!em.getExpression(n), smooth = (x) => { x = THREE.MathUtils.clamp(x, 0, 1); return x * x * (3 - 2 * x); };
 
     let blink = 0;
@@ -317,11 +318,12 @@ export class Viewer {
     }
 
     const vowels = ['aa', 'ee', 'ih', 'oh', 'ou'], step = 0.24, weights = {};
-    if (f.talkTime < 0 && f.smileTime < 0 && (f.talkWait -= delta) <= 0) f.talkTime = 0;
+    if (f.talkTime < 0) f.talkWait -= delta;
+    if (f.talkTime < 0 && f.talkWait <= 0 && f.smileTime < 0) f.talkTime = 0;
     if (f.talkTime >= 0) {
       const t = (f.talkTime += delta), i = Math.floor(t / step);
-      if (i >= vowels.length) { f.talkTime = -1; f.talkWait = 8 + Math.random() * 8; }
-      else weights[vowels[i]] = 0.5 * Math.sin(((t % step) / step) * Math.PI);
+      if (i >= vowels.length) { f.talkTime = -1; f.talkWait = 3 + Math.random() * 4; }
+      else weights[vowels[i]] = 0.8 * Math.sin(((t % step) / step) * Math.PI);
     }
 
     if (has('blink')) em.setValue('blink', blink);
